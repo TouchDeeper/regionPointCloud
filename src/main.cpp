@@ -153,21 +153,37 @@ int main(int argc, char **argv) {
 
         if (mutex_input.try_lock()) {
             float *p_data_cloud = data_cloud.getPtr<float>();
-            int index = 0;
+            for(int i = 0;i<p_pcl_point_cloud->height;i++)
+            {
+                for(int j = 0; j < p_pcl_point_cloud->width; j++)
+                {
+                    int index_zed = 4 * zed.getResolution().width * (left_up.y + i) + 4 * (left_up.x + j);
+                    int index_pcl = i*p_pcl_point_cloud->width+j;
+                    float X = p_data_cloud[index_zed];
+                    if(!isValidMeasure(X))
+                        p_pcl_point_cloud->points[index_pcl].x=p_pcl_point_cloud->points[index_pcl].x=p_pcl_point_cloud->points[index_pcl].x=p_pcl_point_cloud->points[index_pcl].rgb=0;
+                    else{
+                        p_pcl_point_cloud->points[index_pcl].x = p_data_cloud[index_zed];
+                        p_pcl_point_cloud->points[index_pcl].y = p_data_cloud[index_zed+1];
+                        p_pcl_point_cloud->points[index_pcl].z = p_data_cloud[index_zed+2];
+                        p_pcl_point_cloud->points[index_pcl].rgb = convertColor(p_data_cloud[index_zed + 3]);
+                    }
 
-            // Check and adjust points for PCL format
-            for (auto &it : p_pcl_point_cloud->points) {
-                float X = p_data_cloud[index];
-                if (!isValidMeasure(X)) // Checking if it's a valid point
-                    it.x = it.y = it.z = it.rgb = 0;
-                else {
-                    it.x = X;
-                    it.y = p_data_cloud[index + 1];
-                    it.z = p_data_cloud[index + 2];
-                    it.rgb = convertColor(p_data_cloud[index + 3]); // Convert a 32bits float into a pcl .rgb format
                 }
-                index += 4;
             }
+//            // Check and adjust points for PCL format
+//            for (auto &it : p_pcl_point_cloud->points) {
+//                float X = p_data_cloud[index];
+//                if (!isValidMeasure(X)) // Checking if it's a valid point
+//                    it.x = it.y = it.z = it.rgb = 0;
+//                else {
+//                    it.x = X;
+//                    it.y = p_data_cloud[index + 1];
+//                    it.z = p_data_cloud[index + 2];
+//                    it.rgb = convertColor(p_data_cloud[index + 3]); // Convert a 32bits float into a pcl .rgb format
+//                }
+//                index += 4;
+//            }
 
             // Unlock data and update Point cloud
             mutex_input.unlock();
